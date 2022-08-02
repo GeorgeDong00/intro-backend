@@ -46,7 +46,13 @@ def hello_world():
 
 
 # your routes here
-
+@app.route("/api/posts/", methods=["GET"])
+def get_posts():
+    """
+    Returns: Retrieve all posts
+    """
+    res = {"posts": list(posts.values())}
+    return json.dumps(res), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
