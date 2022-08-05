@@ -53,12 +53,11 @@ def get_user(user_id):
     Returns json of user's information if successful.
     """
     user_data = DB.select_user_id(user_id)
-    if user_data is None:
+    if user_data is not None:
         return json.dumps(DB.select_user_id(user_id)), 201
     return json.dumps({"error": "User doesn't exist"}), 404
 
 @app.route("/api/user/<int:user_id>/", methods=["DELETE"])
-# TODO: debug del_user so it returns error if id doesn't exist
 def delete_user(user_id):
     """
     Endpoint deletes user of specified id.
