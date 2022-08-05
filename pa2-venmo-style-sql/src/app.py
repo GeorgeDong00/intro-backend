@@ -53,7 +53,7 @@ def get_user(user_id):
     Returns json of user's information if successful.
     """
     user_data = DB.select_user_id(user_id)
-    if user_data is not None:
+    if user_data is None:
         return json.dumps(DB.select_user_id(user_id)), 201
     return json.dumps({"error": "User doesn't exist"}), 404
 
@@ -66,7 +66,7 @@ def delete_user(user_id):
     Returns json of deleted user's information if successful. 
     """
     del_user = DB.select_user_id(user_id)
-    if del_user is None:
+    if not del_user:
         return json.dumps({"error": "User doesn't exist"}), 404
     DB.delete_user(user_id)
     return json.dumps(del_user), 200
