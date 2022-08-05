@@ -115,6 +115,10 @@ class DatabaseDriver(object):
     
     def select_password(self, id):
         """
+        Using SQL, retrieve password of specified user.
+
+        Parameter id refers to user's id. 
+        Precondition id should exist in users table. 
         """
         cursor = self.conn.execute("SELECT password FROM users WHERE id = ?;", (id,))
         password = []
