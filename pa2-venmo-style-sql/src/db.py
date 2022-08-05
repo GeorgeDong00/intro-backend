@@ -81,7 +81,7 @@ class DatabaseDriver(object):
     
     def select_user_id(self, id):
         """
-        Return list containing information about user of specified id
+        Using SQL, return list containing information about user of specified id
 
         Parameter id refers to user's id. 
         Precondition id should exist in users table. 
@@ -92,4 +92,21 @@ class DatabaseDriver(object):
             user.append({"id": row[0], "name": row[1], "username": row[2], "balance": row[3]})
         return user
     
+    def delete_user(self, id):
+        """
+        Using SQL, delete user with specified id
+        """
+        self.conn.execute("DELETE FROM users WHERE id = ?;", (id,))
+        self.conn.commit()
 
+    def update_bal(self, id, new_bal):
+        """
+        Using SQL, update the specified user's balance with the new balance
+
+        Parameter id refers to user's id. 
+        Precondition id should exist in users table. 
+
+        Parameter new_bal refers to the new updated balance of user.
+        """
+        self.conn.execute("UPDATE users SET balance = ? WHERE id = ?;", (new_bal, id))
+        self.conn.commit()
