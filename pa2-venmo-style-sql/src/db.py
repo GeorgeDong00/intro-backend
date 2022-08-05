@@ -24,6 +24,7 @@ class DatabaseDriver(object):
         Initializes database connection and create SQL table.
         """
         self.conn = sqlite3.connect("venmo.db", check_same_thread = False)
+        # self.delete_users_table()
         self.create_users_table()
     
     def create_users_table(self):
@@ -38,7 +39,8 @@ class DatabaseDriver(object):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     username TEXT NOT NULL,
-                    balance INTEGER NOT NULL
+                    balance INTEGER NOT NULL,
+                    password TEXT
                 );
                 """
             )
@@ -62,7 +64,7 @@ class DatabaseDriver(object):
             users.append({"id": row[0], "name": row[1], "username": row[2]})
         return users
     
-    def insert_user(self, name, username, balance):
+    def insert_user(self, name, username, balance, password = None):
         """
         Using SQL, insert new user into the table 
 
@@ -71,9 +73,9 @@ class DatabaseDriver(object):
         """
         cursor = self.conn.execute(
             """
-            INSERT INTO users (name, username, balance) 
-            VALUES (?, ?, ?);
-            """, (name, username, balance))
+            INSERT INTO users (name, username, balance, password) 
+            VALUES (?, ?, ?, ?);
+            """, (name, username, balance, password))     
         # commit the sql insertion
         self.conn.commit()
         # return last inserted row
@@ -110,3 +112,12 @@ class DatabaseDriver(object):
         """
         self.conn.execute("UPDATE users SET balance = ? WHERE id = ?;", (new_bal, id))
         self.conn.commit()
+    
+    def select_password(self, id):
+        """
+        """
+        cursor = self.conn.execute("SELECT password FROM users WHERE id = ?;", (id,))
+        password = []
+        for row in cursor: 
+            password.append({"password": row[0]})
+        return password
