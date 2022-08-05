@@ -56,7 +56,7 @@ def get_user(user_id):
     Returns json of user's information if successful.
     """
     user_data = DB.select_user_id(user_id)
-    if user_data is not None:
+    if user_data:
         return json.dumps(DB.select_user_id(user_id)), 201
     return json.dumps({"error": "User doesn't exist"}), 404
 
@@ -150,17 +150,15 @@ def get_secured_user(user_id):
     """
     body = json.loads(request.data)
     password = body.get("password")
+    
     if password is not None: 
-
         user_data = DB.select_user_id(user_id)
-        if user_data is not None:
-
+        if user_data:
             if valid_pass(user_id, password):
                 return json.dumps(DB.select_user_id(user_id)), 201
-
             return json.dumps({"error": "Password is incorrect"}), 401
         return json.dumps({"error": "User doesn't exist"}), 404
-    return json.dumps({"error": "Password missing"}), 401
+    return json.dumps({"error": "Password missing"}), 400
 
 @app.route("/api/extra/send/", methods=["POST"])
 def send_money_secured():
@@ -178,18 +176,14 @@ def send_money_secured():
     s_password = body.get("sender_password")
 
     if sender is not None and receiver is not None and amount is not None and s_password is not None: 
-
-        sender = body.get("sender_id")
-        receiver = body.get("receiver_id")
-        amount = body.get("amount")
         
+        # validate sender_id and receiver_id exist in database
+        sender_data = DB.select_user_id(sender)
+        receiver_data = DB.select_user_id(receiver)
+        if sender_data and receiver_data:
         #validate sender's password exist and matches with database
-        if valid_pass(sender, s_password):
-            # validate sender_id and receiver_id exist in database
-            sender_data = DB.select_user_id(sender)
-            receiver_data = DB.select_user_id(receiver)
+            if valid_pass(sender, s_password):
 
-            if sender_data and receiver_data:
                 # validate sender's balance exceeds amount being sent
                 if sender_data[0]["balance"] >= body["amount"]:
 
@@ -205,8 +199,8 @@ def send_money_secured():
                     return json.dumps({"sender_id": sender, "reciever_id": receiver, "amount": amount}), 200
 
                 return json.dumps({"error": "Sender's amount exceed balance"}), 400
-            return json.dumps({"error": "Sender and/or receiver doesn't exist"}), 404
-        return json.dumps({"error": "Password is incorrect"}), 401
+            return json.dumps({"error": "Password is incorrect"}), 401
+        return json.dumps({"error": "Sender and/or receiver doesn't exist"}), 404
     return json.dumps({"error": "Missing sender, receiver, transaction amount, and/or password"}), 400
 
 
