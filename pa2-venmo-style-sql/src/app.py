@@ -34,11 +34,13 @@ def create_user():
     """
     # fetch body information
     body = json.loads(request.data)
+    name = body.get("name")
+    username = body.get("username")
     # check if name and username is valid, otherwise return 400
-    if body["name"] and body["username"]:
+    if name is not None and username is not None:
         balance = body.get("balance", 0)
         #call method to insert user into users data, and get id of new user
-        user_id = DB.insert_user(body["name"], body["username"], balance)
+        user_id = DB.insert_user(name, username, balance)
 
         if user_id is None:
             return json.dumps({"error": "Error occured while creating task"}), 400
@@ -81,12 +83,12 @@ def send_money():
     """
     # validate sender_id, receiver_id, amount parameter are filled
     body = json.loads(request.data)
-    if body["sender_id"] and body["receiver_id"] and body["amount"]: 
+    
+    sender = body.get("sender_id")
+    receiver = body.get("receiver_id")
+    amount = body.get("amount")
 
-        sender = body.get("sender_id")
-        receiver = body.get("receiver_id")
-        amount = body.get("amount")
-
+    if sender is not None and receiver is not None and amount is not None: 
         # validate sender_id and receiver_id exist in database
         sender_data = DB.select_user_id(sender)
         receiver_data = DB.select_user_id(receiver)
@@ -122,13 +124,17 @@ def create_user_secured():
     # fetch body information
     body = json.loads(request.data)
     # check if name and username is valid, otherwise return 400
-    if body["name"] and body["username"] and body["password"]:
+    name = body.get("name")
+    username = body.get("username")
+    password = body.get("password")
+    # check if name and username is valid, otherwise return 400
+    if name is not None and username is not None and password is not None:
         balance = body.get("balance", 0)
         #call method to insert user into users data, and get id of new user
-        user_id = DB.insert_user(body["name"], body["username"], balance, body["password"])
+        user_id = DB.insert_user(name, username, balance, password)
 
         if user_id is None:
-            return json.dumps({"error": "Error occured while creating task"}), 400
+            return json.dumps({"error": "Error occured while creating user"}), 400
         return json.dumps(DB.select_user_id(user_id)), 201
 
     return json.dumps({"error": "Name, username, and/or password missing"}), 400
@@ -143,17 +149,18 @@ def get_secured_user(user_id):
     Precondition user_id must be an id of an user with valid password that isn't default None
     """
     body = json.loads(request.data)
-    if body.get("password"): 
+    password = body.get("password")
+    if password is not None: 
 
         user_data = DB.select_user_id(user_id)
         if user_data is not None:
 
-            if valid_pass(user_id, body["password"]):
+            if valid_pass(user_id, password):
                 return json.dumps(DB.select_user_id(user_id)), 201
 
             return json.dumps({"error": "Password is incorrect"}), 401
         return json.dumps({"error": "User doesn't exist"}), 404
-    return json.dumps({"error": "Error occured while accessing password"}), 400
+    return json.dumps({"error": "Password missing"}), 401
 
 @app.route("/api/extra/send/", methods=["POST"])
 def send_money_secured():
@@ -165,14 +172,19 @@ def send_money_secured():
     """
     # validate sender_id, receiver_id, amount parameter are filled
     body = json.loads(request.data)
-    if body["sender_id"] and body["receiver_id"] and body["amount"]: 
+    sender = body.get("sender_id")
+    receiver = body.get("receiver_id")
+    amount = body.get("amount")
+    s_password = body.get("sender_password")
+
+    if sender is not None and receiver is not None and amount is not None and s_password is not None: 
 
         sender = body.get("sender_id")
         receiver = body.get("receiver_id")
         amount = body.get("amount")
         
         #validate sender's password exist and matches with database
-        if body["sender_password"] and valid_pass(sender, body["sender_password"]):
+        if valid_pass(sender, s_password):
             # validate sender_id and receiver_id exist in database
             sender_data = DB.select_user_id(sender)
             receiver_data = DB.select_user_id(receiver)
@@ -194,13 +206,14 @@ def send_money_secured():
 
                 return json.dumps({"error": "Sender's amount exceed balance"}), 400
             return json.dumps({"error": "Sender and/or receiver doesn't exist"}), 404
-        return json.dumps({"error": "Password is incorrect or not sent"}), 401
-    return json.dumps({"error": "Missing sender, receiver, and/or transaction amount"}), 400
+        return json.dumps({"error": "Password is incorrect"}), 401
+    return json.dumps({"error": "Missing sender, receiver, transaction amount, and/or password"}), 400
 
 
 # helper function
 def valid_pass(user_id, password):
     """
+    Return true if password input matches with specified user's password in database, otherwise false
     """
     if password == DB.select_password(user_id)[0]["password"]:
         return True
