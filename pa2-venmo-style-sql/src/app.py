@@ -130,8 +130,8 @@ def create_user_secured():
     # check if name and username is valid, otherwise return 400
     if name is not None and username is not None and password is not None:
         balance = body.get("balance", 0)
-        #call method to insert user into users data, and get id of new user
-        user_id = DB.insert_user(name, username, balance, password)
+        hash_pass = hash(password)
+        user_id = DB.insert_user(name, username, balance, hash_pass)
 
         if user_id is None:
             return json.dumps({"error": "Error occured while creating user"}), 400
@@ -209,9 +209,22 @@ def valid_pass(user_id, password):
     """
     Return true if password input matches with specified user's password in database, otherwise false
     """
-    if password == DB.select_password(user_id)[0]["password"]:
+    if hash(password) == DB.select_password(user_id)[0]["password"]:
         return True
     return False
+
+def hash(password):
+    """
+    Return string of hashed password
+
+    Parameter password refers to-be hashed input of type string.
+    """
+    #encode non-string object
+    input = password.encode()
+    #convert to hash object
+    res = hashlib.sha256(input)
+    #return hash string
+    return res.hexdigest()
 
 
 if __name__ == "__main__":
