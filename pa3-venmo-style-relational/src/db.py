@@ -14,8 +14,12 @@ class DatabaseDriver(object):
         """
         self.conn = sqlite3.connect("venmo.db", check_same_thread = False)
         # self.delete_users_table()
+        # self.delete_txns_table()
         self.create_users_table()
+        self.create_txns_table()
     
+    # -- USERS -----------------------------------------------------------
+
     def create_users_table(self):
         """
         Using SQL, creates a user database that tracks id, name, username, and
@@ -78,8 +82,9 @@ class DatabaseDriver(object):
         """
         cursor = self.conn.execute("SELECT * FROM users WHERE id = ?;", (id,))
         user = []
+        user_txns = self.select_txn_by_user(id)
         for row in cursor:
-            user.append({"id": row[0], "name": row[1], "username": row[2], "balance": row[3]})
+            user.append({"id": row[0], "name": row[1], "username": row[2], "balance": row[3], "transactions": user_txns})
         return user
     
     def delete_user(self, id):
@@ -101,3 +106,90 @@ class DatabaseDriver(object):
         self.conn.execute("UPDATE users SET balance = ? WHERE id = ?;", (new_bal, id))
         self.conn.commit()
     
+    #-- TRANSACTIONS --------------------------------------------------------
+
+    def create_txns_table(self):
+        """
+        Using SQL, create txns relational table to track transactions between different users.
+        Sender_id and reciever_id refers to user's id from users table. 
+        """
+        try:
+            cursor = self.conn.execute(
+                """
+                CREATE TABLE txns (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL, 
+                    sender_id INTEGER SECONDARY KEY NOT NULL,
+                    receiver_id INTEGER SECONDARY KEY NOT NULL,
+                    amount INTEGER NOT NULL,
+                    message TEXT NOT NULL,
+                    accepted BOOL
+                )
+                """
+            )
+        except Exception as e:
+            print(e)
+    
+    def delete_txns_table(self):
+        """
+        Using SQL, delete txns table
+        """
+        self.conn.execute("DROP TABLE IF EXISTS txns;")
+
+    def insert_txn(self, timestamp, sender_id, receiver_id, amount, message, accepted):
+        """
+        Using SQL, create a new transaction within txns table given parameters. Returns the id 
+        of the last generated (newest) transaction. 
+        """
+        cursor = self.conn.execute(
+            """
+            INSERT INTO txns (timestamp, sender_id, receiver_id, amount, message, accepted)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """, (timestamp, sender_id, receiver_id, amount, message, accepted)
+        )
+        self.conn.commit()
+        return cursor.lastrowid
+
+    def select_txn_by_user(self, user_id):
+        """
+        Using SQL, returns a list of dictionaries of all of the user's transaction given
+        user's id. 
+        """
+        cursor = self.conn.execute(
+            """
+            SELECT * FROM txns
+            WHERE sender_id = ? 
+            OR receiver_id = ?;
+            """, (user_id, user_id)
+        )
+        txns = []
+        for row in cursor:
+            txns.append({ 
+                "id": row[0],
+                "timestamp": row[1],
+                "sender_id": row[2],
+                "receiver_id": row[3],
+                "amount": row[4],
+                "message": row[5],
+                "accepted": bool(row[6])
+                })
+        return txns        
+    
+    def select_txn_by_id(self, txn_id):
+        """
+        Using SQL, return a list of dictionary of details on one transaction given 
+        transaction id.
+        """
+        cursor = self.conn.execute("SELECT * FROM txns WHERE id = ?;", (txn_id,))
+        txn = []
+        for row in cursor:
+            txn.append({ 
+                "id": row[0],
+                "timestamp": row[1],
+                "sender_id": row[2],
+                "receiver_id": row[3],
+                "amount": row[4],
+                "message": row[5],
+                "accepted": bool(row[6])
+                })
+        return txn
