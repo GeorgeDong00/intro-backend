@@ -48,7 +48,7 @@ def create_user():
 
     return json.dumps({"error": "Name and/or username missing"}), 400
 
-@app.route("/api/user/<int:user_id>/", methods=["GET"])
+@app.route("/api/users/<int:user_id>/", methods=["GET"])
 def get_user(user_id):
     """
     Endpoint fetches user of specified id. 
@@ -60,7 +60,7 @@ def get_user(user_id):
         return json.dumps(DB.select_user_id(user_id)), 201
     return json.dumps({"error": "User doesn't exist"}), 404
 
-@app.route("/api/user/<int:user_id>/", methods=["DELETE"])
+@app.route("/api/users/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
     """
     Endpoint deletes user of specified id.
@@ -112,6 +112,24 @@ def send_money():
         return json.dumps({"error": "Sender and/or receiver doesn't exist"}), 404
     return json.dumps({"error": "Missing sender, receiver, and/or transaction amount"}), 400
 
+@app.route("/api/transactions/", methods=["POST"])
+def create_transaction():
+    body = json.loads(request.data)
+
+    sender_id = body.get("sender_id")
+    receiver_id = body.get("receiver_id")
+    amount = body.get("amount")
+    message = body.get("message", "None")
+    accepted = body.get("accepted", None)
+
+    if (sender_id is not None) and (receiver_id is not None) and (amount is not None) and (message is not None):
+        new_txn_id = DB.insert_txn(datetime.now(), sender_id, receiver_id, amount, message, accepted)
+
+        if new_txn_id is not None:
+            return json.dumps(DB.select_txn_by_id(new_txn_id)), 201
+
+        return json.dumps({"error": "New transaction not successfully created"})
+    return json.dumps({"error": "Missing information within request"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
